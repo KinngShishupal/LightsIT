@@ -1,0 +1,46 @@
+buildscript {
+    ext {
+        buildToolsVersion = "37.0.0"
+        minSdkVersion = 24
+        compileSdkVersion = 37
+        targetSdkVersion = 36
+        ndkVersion = "27.1.12297006"
+        kotlinVersion = "2.2.0"
+    }
+    repositories {
+        google()
+        mavenCentral()
+    }
+    dependencies {
+        classpath("com.android.tools.build:gradle")
+        classpath("com.facebook.react:react-native-gradle-plugin")
+        classpath("org.jetbrains.kotlin:kotlin-gradle-plugin")
+    }
+}
+
+apply plugin: "com.facebook.react.rootproject"
+
+// react-native-audio-api downloads its prebuilt native libs with a bash script
+// on every build. On Windows it calls Git's bash.exe directly, which breaks when
+// the build starts from PowerShell/cmd (Git's tools aren't on PATH). So:
+//  1. skip the task entirely once the binaries are already in node_modules;
+//  2. otherwise run it with Git's tool folders on PATH.
+subprojects {
+    tasks.matching { it.name == "downloadPrebuiltBinaries" }.configureEach { task ->
+        def lib = task.project.projectDir.parentFile
+        def abis = ["arm64-v8a", "armeabi-v7a", "x86", "x86_64"]
+        task.onlyIf {
+            !abis.every { abi ->
+                new File(lib, "common/cpp/audioapi/external/android/${abi}/libopus.a").exists() &&
+                    new File(lib, "android/src/main/jniLibs/${abi}/libavcodec.so").exists()
+            }
+        }
+        if (System.getProperty("os.name").toLowerCase().contains("windows")) {
+            def gitRoot = new File("C:/Program Files/Git")
+            def gitTools = [new File(gitRoot, "usr/bin"), new File(gitRoot, "mingw64/bin")]
+                .collect { it.absolutePath }
+                .join(File.pathSeparator)
+            task.environment "PATH", gitTools + File.pathSeparator + System.getenv("PATH")
+        }
+    }
+}
