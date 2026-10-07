@@ -41,6 +41,12 @@ import {
 } from '../game/engine';
 import { CHAPTERS, LEVELS } from '../game/levels';
 import { SOLUTIONS } from '../game/solutions';
+import {
+  type ConceptId,
+  HOW_TO_PLAY,
+  LEVEL_INTROS,
+} from '../tutorial/concepts';
+import { TutorialOverlay } from '../tutorial/TutorialOverlay';
 import { useProgress } from '../storage/progress';
 import { BEAM, C, FONT } from '../theme';
 
@@ -97,6 +103,13 @@ export function GameScreen({
   const [won, setWon] = useState(false);
   const [showResult, setShowResult] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
+  const intros = LEVEL_INTROS[level.name] ?? [];
+  // Show any concept this level introduces that the player hasn't seen yet.
+  const [tutorial, setTutorial] = useState<ConceptId[] | null>(() => {
+    const unseen = intros.filter(id => !progress.seen[id]);
+    return unseen.length ? unseen : null;
+  });
+  const [coach, setCoach] = useState(false);
   const win = useSharedValue(0);
   const trayShake = useSharedValue(0);
 
@@ -230,6 +243,7 @@ export function GameScreen({
   const askHint = () => {
     if (won) return;
     setHinted(true);
+    setCoach(false);
     sound.hint();
     for (const k in sol.pivots) {
       if (pieces[k]?.orient !== sol.pivots[k]) {
@@ -334,13 +348,26 @@ export function GameScreen({
     transform: [{ translateX: trayShake.value }],
   }));
 
-  const hintText = hint
-    ? hint.remove
-      ? 'This piece is in the way: drag it off the board.'
-      : hint.rotate
-      ? 'Rotate this pivot.'
-      : `Try a ${hint.kind} here, angled like the outline.`
-    : notice ?? level.hint;
+  const closeTutorial = useCallback(() => {
+    if (tutorial) progress.markSeen(tutorial);
+    setTutorial(null);
+    // First level: guide the very first placement by hand.
+    if (index === 0 && !won && Object.keys(pieces).length === 0) {
+      setCoach(true);
+      setHint(sol.placements[0]);
+    }
+  }, [tutorial, progress, index, won, pieces, sol]);
+
+  const hintText =
+    coach && hint
+      ? 'Tap the glowing tile to place a mirror.'
+      : hint
+      ? hint.remove
+        ? 'This piece is in the way: drag it off the board.'
+        : hint.rotate
+        ? 'Rotate this pivot.'
+        : `Try a ${hint.kind} here, angled like the outline.`
+      : notice ?? level.hint;
 
   return (
     <View
@@ -456,6 +483,11 @@ export function GameScreen({
           <IconButton glyph="↶" label="UNDO" onPress={undo} />
           <IconButton glyph="⟲" label="RESET" onPress={reset} />
           <IconButton glyph="✦" label="HINT" onPress={askHint} />
+          <IconButton
+            glyph="?"
+            label="GUIDE"
+            onPress={() => setTutorial(intros.length ? intros : HOW_TO_PLAY)}
+          />
         </View>
       </Animated.View>
 
@@ -471,6 +503,10 @@ export function GameScreen({
           onReplay={onReplay}
           onMenu={onBack}
         />
+      ) : null}
+
+      {tutorial ? (
+        <TutorialOverlay ids={tutorial} onDone={closeTutorial} />
       ) : null}
     </View>
   );

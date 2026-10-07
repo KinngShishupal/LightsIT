@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -7,6 +7,8 @@ import { useAudioSettings } from '../audio/useAudioSettings';
 import { HeroBeam } from '../components/HeroBeam';
 import { GlowButton, PressableScale } from '../components/ui';
 import { LEVELS } from '../game/levels';
+import { HOW_TO_PLAY } from '../tutorial/concepts';
+import { TutorialOverlay } from '../tutorial/TutorialOverlay';
 import { useProgress } from '../storage/progress';
 import { C, FONT } from '../theme';
 
@@ -21,6 +23,7 @@ export function HomeScreen({
   const { width } = useWindowDimensions();
   const progress = useProgress();
   const audio = useAudioSettings();
+  const [guide, setGuide] = useState(false);
 
   const next = LEVELS.findIndex((_, i) => !progress.stars[i]);
   const started = Object.keys(progress.stars).length > 0;
@@ -61,6 +64,9 @@ export function HomeScreen({
           onPress={onLevels}
           style={styles.wide}
         />
+        <PressableScale onPress={() => setGuide(true)} style={styles.howTo}>
+          <Text style={styles.howToText}>? HOW TO PLAY</Text>
+        </PressableScale>
         <Text style={styles.footer}>
           <Text style={{ color: C.gold }}>★ </Text>
           {progress.totalStars} / {LEVELS.length * 3}
@@ -80,6 +86,10 @@ export function HomeScreen({
           />
         </View>
       </Animated.View>
+
+      {guide ? (
+        <TutorialOverlay ids={HOW_TO_PLAY} onDone={() => setGuide(false)} />
+      ) : null}
     </View>
   );
 }
@@ -112,6 +122,8 @@ function Toggle({
 
 const styles = StyleSheet.create({
   toggles: { flexDirection: 'row', gap: 10, marginTop: 4 },
+  howTo: { paddingVertical: 6, paddingHorizontal: 14 },
+  howToText: { color: C.dim, fontSize: 12, ...FONT.label, letterSpacing: 2.5 },
   toggle: {
     flexDirection: 'row',
     alignItems: 'center',
