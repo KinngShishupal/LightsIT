@@ -13,6 +13,7 @@ import {
   View,
 } from 'react-native';
 import Animated, {
+  Easing,
   FadeIn,
   FadeInDown,
   type SharedValue,
@@ -20,15 +21,18 @@ import Animated, {
   useSharedValue,
   withDelay,
   withSequence,
-  withSpring,
   withTiming,
-  ZoomIn,
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { sound } from '../audio/sound';
 import { Board, type Cell } from '../components/Board';
 import { PieceIcon } from '../components/boardArt';
-import { GlowButton, IconButton, PressableScale } from '../components/ui';
+import {
+  GlowButton,
+  IconButton,
+  PressableScale,
+  softEnter,
+} from '../components/ui';
 import {
   canBuild,
   key,
@@ -518,12 +522,12 @@ function ResultStar({ on, i }: { on: boolean; i: number }) {
     const t = setTimeout(() => sound.star(i, on), 350 + i * 220);
     s.value = withDelay(
       350 + i * 220,
-      withSpring(1, { damping: 7, stiffness: 160 }),
+      withTiming(1, { duration: 480, easing: Easing.bezier(0.22, 1, 0.36, 1) }),
     );
     return () => clearTimeout(t);
   }, [s, i, on]);
   const style = useAnimatedStyle(() => ({
-    transform: [{ scale: s.value }, { rotate: `${(1 - s.value) * -90}deg` }],
+    transform: [{ scale: 0.8 + s.value * 0.2 }],
     opacity: s.value,
   }));
   return (
@@ -562,10 +566,7 @@ function ResultCard(props: {
       : `Solve it with ${props.par} piece${props.par === 1 ? '' : 's'} for ★★★`;
   return (
     <Animated.View entering={FadeIn.duration(350)} style={styles.overlay}>
-      <Animated.View
-        entering={ZoomIn.springify().damping(14)}
-        style={styles.card}
-      >
+      <Animated.View entering={softEnter} style={styles.card}>
         <Text style={styles.cardKicker}>
           {props.last ? 'ALL CRYSTALS AWAKE' : 'LIGHT ACHIEVED'}
         </Text>

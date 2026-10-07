@@ -7,12 +7,34 @@ import {
   type ViewStyle,
 } from 'react-native';
 import Animated, {
+  Easing,
   useAnimatedStyle,
   useSharedValue,
   withSpring,
+  withTiming,
 } from 'react-native-reanimated';
 import { sound } from '../audio/sound';
 import { C, FONT } from '../theme';
+
+const CALM = { duration: 420, easing: Easing.bezier(0.22, 1, 0.36, 1) };
+
+/** Calm entrance for cards and dialogs: fade in while drifting up a few px. */
+export const softEnter = () => {
+  'worklet';
+  return {
+    initialValues: {
+      opacity: 0,
+      transform: [{ translateY: 18 }, { scale: 0.985 }],
+    },
+    animations: {
+      opacity: withTiming(1, CALM),
+      transform: [
+        { translateY: withTiming(0, CALM) },
+        { scale: withTiming(1, CALM) },
+      ],
+    },
+  };
+};
 
 export function PressableScale({
   onPress,

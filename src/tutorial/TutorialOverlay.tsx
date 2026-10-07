@@ -11,11 +11,10 @@ import Animated, {
   FadeInRight,
   FadeOut,
   FadeOutLeft,
-  SlideInDown,
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { sound } from '../audio/sound';
-import { GlowButton } from '../components/ui';
+import { GlowButton, softEnter } from '../components/ui';
 import { C, FONT } from '../theme';
 import { CONCEPTS, type ConceptId } from './concepts';
 import { DemoBoard } from './DemoBoard';
@@ -52,7 +51,7 @@ export function TutorialOverlay({
       style={[styles.overlay, { paddingBottom: insets.bottom + 24 }]}
     >
       <Animated.View
-        entering={SlideInDown.springify().damping(18)}
+        entering={softEnter}
         style={[styles.card, { width: cardWidth }]}
       >
         <Animated.View
