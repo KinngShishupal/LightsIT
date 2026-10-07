@@ -24,6 +24,7 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { rewardedHint } from '../ads/rewardedHint';
 import { sound } from '../audio/sound';
 import { Board, type Cell } from '../components/Board';
 import { PieceIcon } from '../components/boardArt';
@@ -244,42 +245,76 @@ export function GameScreen({
     sound.reset();
   };
 
-  const askHint = () => {
-    if (won) return;
-    setHinted(true);
-    setCoach(false);
-    sound.hint();
+  /** The next step of the stored solution the player hasn't done yet. */
+  const nextHint = (): Hint => {
     for (const k in sol.pivots) {
       if (pieces[k]?.orient !== sol.pivots[k]) {
         const { x, y } = unkey(k);
-        setHint({ x, y, kind: 'mirror', orient: sol.pivots[k], rotate: true });
-        return;
+        return { x, y, kind: 'mirror', orient: sol.pivots[k], rotate: true };
       }
     }
     for (const p of sol.placements) {
       const cur = pieces[key(p.x, p.y)];
-      if (!cur || cur.kind !== p.kind || cur.orient !== p.orient) {
-        setHint(p);
-        return;
-      }
+      if (!cur || cur.kind !== p.kind || cur.orient !== p.orient) return p;
     }
     // Everything required is placed; something extra must be in the way.
     const wanted = new Set(sol.placements.map(p => key(p.x, p.y)));
     const extra = Object.keys(pieces).find(
       k => pieces[k].lock === 'none' && !wanted.has(k),
     );
-    if (extra) {
-      const { x, y } = unkey(extra);
-      setHint({
-        x,
-        y,
-        kind: pieces[extra].kind,
-        orient: pieces[extra].orient,
-        rotate: true,
-        remove: true,
-      });
+    if (!extra) return null;
+    const { x, y } = unkey(extra);
+    return {
+      x,
+      y,
+      kind: pieces[extra].kind,
+      orient: pieces[extra].orient,
+      rotate: true,
+      remove: true,
+    };
+  };
+
+  const [adBusy, setAdBusy] = useState(false);
+
+  // Each new hint is unlocked by watching a rewarded ad.
+  const askHint = async () => {
+    if (won || adBusy) return;
+    const next = nextHint();
+    if (!next) return;
+    // Already showing this exact hint: no need to watch another ad.
+    if (hint && !coach && hint.x === next.x && hint.y === next.y) return;
+
+    setAdBusy(true);
+    const result = await rewardedHint.show();
+    setAdBusy(false);
+
+    if (result === 'skipped') {
+      flashAdMsg('Watch the whole ad to unlock a hint.');
+      return;
+    }
+    setHinted(true);
+    setCoach(false);
+    sound.hint();
+    setHint(next);
+    // No ad could be loaded (offline / no fill): don't punish the player.
+    if (result === 'unavailable') {
+      flashAdMsg('No ad available right now, so this hint is free.');
     }
   };
+
+  const [adMsg, setAdMsg] = useState<string | null>(null);
+  const adMsgTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const flashAdMsg = (msg: string) => {
+    setAdMsg(msg);
+    if (adMsgTimer.current) clearTimeout(adMsgTimer.current);
+    adMsgTimer.current = setTimeout(() => setAdMsg(null), 3000);
+  };
+  useEffect(
+    () => () => {
+      if (adMsgTimer.current) clearTimeout(adMsgTimer.current);
+    },
+    [],
+  );
 
   // Drop the hint once the player follows it.
   useEffect(() => {
@@ -362,16 +397,19 @@ export function GameScreen({
     }
   }, [tutorial, progress, index, won, pieces, sol]);
 
-  const hintText =
-    coach && hint
-      ? 'Tap the glowing tile to place a mirror.'
-      : hint
-      ? hint.remove
-        ? 'This piece is in the way: drag it off the board.'
-        : hint.rotate
-        ? 'Rotate this pivot.'
-        : `Try a ${hint.kind} here, angled like the outline.`
-      : notice ?? level.hint;
+  const hintText = adBusy
+    ? 'Loading ad…'
+    : adMsg
+    ? adMsg
+    : coach && hint
+    ? 'Tap the glowing tile to place a mirror.'
+    : hint
+    ? hint.remove
+      ? 'This piece is in the way: drag it off the board.'
+      : hint.rotate
+      ? 'Rotate this pivot.'
+      : `Try a ${hint.kind} here, angled like the outline.`
+    : notice ?? level.hint;
 
   return (
     <View
@@ -486,7 +524,12 @@ export function GameScreen({
         <View style={styles.actions}>
           <IconButton glyph="↶" label="UNDO" onPress={undo} />
           <IconButton glyph="⟲" label="RESET" onPress={reset} />
-          <IconButton glyph="✦" label="HINT" onPress={askHint} />
+          <IconButton
+            glyph={adBusy ? '…' : '✦'}
+            label="HINT"
+            badge="AD"
+            onPress={askHint}
+          />
           <IconButton
             glyph="?"
             label="GUIDE"

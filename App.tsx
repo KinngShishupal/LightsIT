@@ -8,6 +8,7 @@ import React, { useEffect, useState } from 'react';
 import { BackHandler, StatusBar, StyleSheet, View } from 'react-native';
 import { useSharedValue } from 'react-native-reanimated';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { rewardedHint } from './src/ads/rewardedHint';
 import { sound } from './src/audio/sound';
 import { Backdrop } from './src/components/Backdrop';
 import { LEVELS } from './src/game/levels';
@@ -28,6 +29,7 @@ function App() {
 
   useEffect(() => {
     sound.init();
+    rewardedHint.init();
   }, []);
 
   useEffect(() => {

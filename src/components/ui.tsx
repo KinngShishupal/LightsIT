@@ -4,6 +4,7 @@ import {
   type StyleProp,
   StyleSheet,
   Text,
+  View,
   type ViewStyle,
 } from 'react-native';
 import Animated, {
@@ -110,15 +111,23 @@ export function IconButton({
   glyph,
   onPress,
   label,
+  badge,
 }: {
   glyph: string;
   onPress: () => void;
   label?: string;
+  /** Small pill in the top-right corner, e.g. "AD". */
+  badge?: string;
 }) {
   return (
     <PressableScale onPress={onPress} style={styles.icon}>
       <Text style={styles.iconGlyph}>{glyph}</Text>
       {label ? <Text style={styles.iconLabel}>{label}</Text> : null}
+      {badge ? (
+        <View style={styles.badge}>
+          <Text style={styles.badgeText}>{badge}</Text>
+        </View>
+      ) : null}
     </PressableScale>
   );
 }
@@ -178,6 +187,21 @@ const styles = StyleSheet.create({
     borderColor: C.border,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  badge: {
+    position: 'absolute',
+    top: -6,
+    right: -6,
+    paddingHorizontal: 5,
+    paddingVertical: 1.5,
+    borderRadius: 7,
+    backgroundColor: C.gold,
+  },
+  badgeText: {
+    color: '#1A1300',
+    fontSize: 8.5,
+    fontWeight: '900',
+    letterSpacing: 0.8,
   },
   iconGlyph: { color: C.text, fontSize: 20, lineHeight: 24 },
   iconLabel: {

@@ -136,6 +136,15 @@ class SoundEngine {
     this.noise.copyToChannel(n, 0);
   }
 
+  /** Silence everything (e.g. while a full-screen ad plays). */
+  pause() {
+    this.ctx?.suspend().catch(() => {});
+  }
+
+  resume() {
+    this.ctx?.resume().catch(() => {});
+  }
+
   /* ---------------------------------------------------------- settings */
 
   subscribe(fn: Listener) {
