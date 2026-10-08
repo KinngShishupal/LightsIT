@@ -8,7 +8,8 @@
     "lint": "eslint .",
     "start": "react-native start",
     "test": "jest",
-    "build:release": "cd android && gradlew.bat bundleRelease -PreactNativeArchitectures=armeabi-v7a,arm64-v8a,x86,x86_64"
+    "build:aab": "node scripts/release.mjs aab",
+    "build:apk": "node scripts/release.mjs apk"
   },
   "dependencies": {
     "@react-native-async-storage/async-storage": "^3.1.1",

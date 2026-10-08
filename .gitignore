@@ -76,3 +76,6 @@ yarn-error.log
 
 # Release signing secrets
 android/keystore.properties
+
+# Release outputs
+/dist
