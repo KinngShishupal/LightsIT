@@ -1,4 +1,4 @@
-package com.lightsit
+package com.kinngshishupal.lightsit
 
 import com.facebook.react.ReactActivity
 import com.facebook.react.ReactActivityDelegate
