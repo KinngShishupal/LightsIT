@@ -16,7 +16,7 @@ import { sound } from '../audio/sound';
  * Also replace the test app IDs in app.json before releasing.
  */
 const PRODUCTION_UNIT_IDS = {
-  android: '',
+  android: 'ca-app-pub-8284285672679424/7884678035',
   ios: '',
 };
 
