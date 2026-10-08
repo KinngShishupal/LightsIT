@@ -15,12 +15,14 @@ import { LEVELS } from './src/game/levels';
 import { GameScreen } from './src/screens/GameScreen';
 import { HomeScreen } from './src/screens/HomeScreen';
 import { LevelSelectScreen } from './src/screens/LevelSelectScreen';
+import { PrivacyScreen } from './src/screens/PrivacyScreen';
 import { ProgressProvider } from './src/storage/progress';
 import { C } from './src/theme';
 
 type Route =
   | { name: 'home' }
   | { name: 'levels' }
+  | { name: 'privacy' }
   | { name: 'game'; index: number; attempt: number };
 
 function App() {
@@ -54,7 +56,10 @@ function App() {
             <HomeScreen
               onPlay={play}
               onLevels={() => setRoute({ name: 'levels' })}
+              onPrivacy={() => setRoute({ name: 'privacy' })}
             />
+          ) : route.name === 'privacy' ? (
+            <PrivacyScreen onBack={() => setRoute({ name: 'home' })} />
           ) : route.name === 'levels' ? (
             <LevelSelectScreen
               onBack={() => setRoute({ name: 'home' })}

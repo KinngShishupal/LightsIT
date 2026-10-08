@@ -15,9 +15,11 @@ import { C, FONT } from '../theme';
 export function HomeScreen({
   onPlay,
   onLevels,
+  onPrivacy,
 }: {
   onPlay: (index: number) => void;
   onLevels: () => void;
+  onPrivacy: () => void;
 }) {
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
@@ -85,6 +87,9 @@ export function HomeScreen({
             onPress={() => sound.setSfx(!audio.sfx)}
           />
         </View>
+        <Text style={styles.privacy} onPress={onPrivacy} suppressHighlighting>
+          Privacy Policy
+        </Text>
       </Animated.View>
 
       {guide ? (
@@ -123,6 +128,14 @@ function Toggle({
 const styles = StyleSheet.create({
   toggles: { flexDirection: 'row', gap: 10, marginTop: 4 },
   howTo: { paddingVertical: 6, paddingHorizontal: 14 },
+  privacy: {
+    color: C.faint,
+    fontSize: 12,
+    marginTop: 2,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    textDecorationLine: 'underline',
+  },
   howToText: { color: C.dim, fontSize: 12, ...FONT.label, letterSpacing: 2.5 },
   toggle: {
     flexDirection: 'row',
