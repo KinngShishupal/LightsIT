@@ -24,6 +24,7 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { ResultBanner } from '../ads/ResultBanner';
 import { rewardedHint } from '../ads/rewardedHint';
 import { sound } from '../audio/sound';
 import { Board, type Cell } from '../components/Board';
@@ -645,6 +646,7 @@ function ResultCard(props: {
             onPress={props.last ? props.onMenu : props.onNext}
           />
         </Animated.View>
+        <ResultBanner />
       </Animated.View>
     </Animated.View>
   );
@@ -756,7 +758,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(3, 4, 14, 0.62)',
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 24,
+    padding: 16,
   },
   card: {
     width: '100%',
