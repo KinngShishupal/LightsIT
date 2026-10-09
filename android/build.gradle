@@ -44,3 +44,18 @@ subprojects {
         }
     }
 }
+
+// Windows path-length limit: CMake embeds the full source path inside the build
+// folder for react-native-audio-api, so release (RelWithDebInfo) object paths
+// reach ~330 chars and ninja fails with "mkdir ... No such file or directory".
+// Build that library's native code in a short folder at the drive root instead.
+if (System.getProperty("os.name").toLowerCase().contains("windows")) {
+    def shortRoot = new File(rootDir.toPath().root.toFile(), ".lightsit-cxx")
+    subprojects { p ->
+        if (p.name == "react-native-audio-api") {
+            p.plugins.withId("com.android.library") {
+                p.android.externalNativeBuild.cmake.buildStagingDirectory = new File(shortRoot, "audio")
+            }
+        }
+    }
+}
