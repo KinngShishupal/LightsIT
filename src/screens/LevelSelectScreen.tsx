@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   ScrollView,
   StyleSheet,
@@ -8,9 +8,11 @@ import {
 } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { LockIcon } from '../components/LockIcon';
 import { IconButton, PressableScale, Stars } from '../components/ui';
+import { UnlockSheet } from '../components/UnlockSheet';
 import { CHAPTERS, LEVELS } from '../game/levels';
-import { useProgress } from '../storage/progress';
+import { UNLOCK_ADS, useProgress } from '../storage/progress';
 import { C, FONT } from '../theme';
 
 const ACCENTS = ['#3DF2FF', '#7FE7FF', '#FF4FD8', '#A77BFF'];
@@ -29,6 +31,9 @@ export function LevelSelectScreen({
   const progress = useProgress();
   const tile = Math.floor((width - 32 - 32 - GAP * (COLS - 1)) / COLS);
   const current = LEVELS.findIndex((_, i) => !progress.stars[i]);
+  // Only the very next locked level can be unlocked early with ads.
+  const nextLocked = LEVELS.findIndex((_, i) => !progress.isUnlocked(i));
+  const [unlockFor, setUnlockFor] = useState<number | null>(null);
 
   let index = 0;
   return (
@@ -76,11 +81,13 @@ export function LevelSelectScreen({
                   const unlocked = progress.isUnlocked(i);
                   const stars = progress.stars[i] ?? 0;
                   const isCurrent = i === current;
+                  const canAdUnlock = i === nextLocked;
+                  const adsWatched = progress.adUnlock[i] ?? 0;
                   return (
                     <PressableScale
                       key={lv.name}
-                      disabled={!unlocked}
-                      onPress={() => onPick(i)}
+                      disabled={!unlocked && !canAdUnlock}
+                      onPress={() => (unlocked ? onPick(i) : setUnlockFor(i))}
                       style={[
                         styles.tile,
                         { width: tile, height: tile * 1.08 },
@@ -92,18 +99,24 @@ export function LevelSelectScreen({
                         stars > 0 && styles.tileDone,
                       ]}
                     >
-                      <Text
-                        style={[
-                          styles.tileNum,
-                          !unlocked && { color: C.faint },
-                        ]}
-                      >
-                        {unlocked ? i + 1 : '·'}
-                      </Text>
                       {unlocked ? (
-                        <Stars value={stars} size={11} gap={1} />
+                        <>
+                          <Text style={styles.tileNum}>{i + 1}</Text>
+                          <Stars value={stars} size={11} gap={1} />
+                        </>
                       ) : (
-                        <Text style={styles.locked}>LOCKED</Text>
+                        <>
+                          <LockIcon />
+                          {canAdUnlock ? (
+                            <Text style={styles.adUnlock}>
+                              {adsWatched > 0
+                                ? `▶ ${adsWatched}/${UNLOCK_ADS}`
+                                : '▶ UNLOCK'}
+                            </Text>
+                          ) : (
+                            <Text style={styles.locked}>{i + 1}</Text>
+                          )}
+                        </>
                       )}
                     </PressableScale>
                   );
@@ -113,6 +126,17 @@ export function LevelSelectScreen({
           );
         })}
       </ScrollView>
+
+      {unlockFor !== null ? (
+        <UnlockSheet
+          level={unlockFor}
+          onClose={() => setUnlockFor(null)}
+          onPlay={lvl => {
+            setUnlockFor(null);
+            onPick(lvl);
+          }}
+        />
+      ) : null}
     </View>
   );
 }
@@ -176,5 +200,12 @@ const styles = StyleSheet.create({
   },
   tileDone: { borderColor: 'rgba(255, 215, 122, 0.28)' },
   tileNum: { color: C.text, fontSize: 22, fontWeight: '800' },
-  locked: { color: C.faint, fontSize: 8, ...FONT.label, letterSpacing: 1.5 },
+  locked: { color: C.faint, fontSize: 11, fontWeight: '800', marginTop: 2 },
+  adUnlock: {
+    color: '#5FF4FF',
+    fontSize: 9.5,
+    ...FONT.label,
+    letterSpacing: 1,
+    marginTop: 3,
+  },
 });

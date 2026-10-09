@@ -9,22 +9,27 @@ import React, {
 } from 'react';
 
 const STORAGE_KEY = 'lightsit.progress.v1';
+/** Rewarded ads needed to unlock the next level without clearing the previous one. */
+export const UNLOCK_ADS = 3;
 
 interface Progress {
   stars: Record<number, number>; // level index -> best stars (1-3)
   seen: Record<string, true>; // tutorial concepts already shown
+  adUnlock: Record<number, number>; // level index -> unlock ads watched
 }
 
 interface ProgressApi extends Progress {
   ready: boolean;
   record: (level: number, stars: number) => void;
   markSeen: (ids: string[]) => void;
+  /** Counts one fully watched unlock ad for a level; returns the new total. */
+  addUnlockAd: (level: number) => number;
   isUnlocked: (level: number) => boolean;
   totalStars: number;
   reset: () => void;
 }
 
-const EMPTY: Progress = { stars: {}, seen: {} };
+const EMPTY: Progress = { stars: {}, seen: {}, adUnlock: {} };
 const Ctx = createContext<ProgressApi | null>(null);
 
 const persist = (p: Progress) => {
@@ -40,7 +45,11 @@ export function ProgressProvider({ children }: { children: React.ReactNode }) {
       .then(raw => {
         if (raw) {
           const parsed = JSON.parse(raw);
-          setData({ stars: parsed.stars ?? {}, seen: parsed.seen ?? {} });
+          setData({
+            stars: parsed.stars ?? {},
+            seen: parsed.seen ?? {},
+            adUnlock: parsed.adUnlock ?? {},
+          });
         }
       })
       .catch(() => {})
@@ -81,6 +90,18 @@ export function ProgressProvider({ children }: { children: React.ReactNode }) {
     [update],
   );
 
+  const addUnlockAd = useCallback(
+    (level: number) => {
+      const next = Math.min(UNLOCK_ADS, (data.adUnlock[level] ?? 0) + 1);
+      update(prev => ({
+        ...prev,
+        adUnlock: { ...prev.adUnlock, [level]: next },
+      }));
+      return next;
+    },
+    [data.adUnlock, update],
+  );
+
   const reset = useCallback(() => update(() => EMPTY), [update]);
 
   const api = useMemo<ProgressApi>(
@@ -89,12 +110,15 @@ export function ProgressProvider({ children }: { children: React.ReactNode }) {
       ready,
       record,
       markSeen,
+      addUnlockAd,
       reset,
       isUnlocked: (level: number) =>
-        level === 0 || (data.stars[level - 1] ?? 0) > 0,
+        level === 0 ||
+        (data.stars[level - 1] ?? 0) > 0 ||
+        (data.adUnlock[level] ?? 0) >= UNLOCK_ADS,
       totalStars: Object.values(data.stars).reduce((a, b) => a + b, 0),
     }),
-    [data, ready, record, markSeen, reset],
+    [data, ready, record, markSeen, addUnlockAd, reset],
   );
 
   return <Ctx.Provider value={api}>{children}</Ctx.Provider>;
